@@ -2935,9 +2935,10 @@ extension MenuBarItemManager {
             }
         } catch {
             MenuBarItemManager.diagLog.error("Error showing item: \(error)")
-            pendingRelocations.removeValue(forKey: tagIdentifier)
-            pendingReturnDestinations.removeValue(forKey: tagIdentifier)
-            persistPendingRelocations()
+            // Keep the pending relocation: move() can throw after its events
+            // already took effect, leaving the item visible with no rehide
+            // context. relocatePendingItems moves it back on the next cache
+            // cycle, or drops the entry if the item stayed hidden.
             return false
         }
 
