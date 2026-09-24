@@ -2765,7 +2765,8 @@ extension MenuBarItemManager {
         }
         // Also rehide when frontmost app changes (smart-ish).
         rehideCancellable = NSWorkspace.shared.publisher(for: \.frontmostApplication)
-            .receive(on: DispatchQueue.main)
+            .dropFirst()
+            .debounce(for: .milliseconds(200), scheduler: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
                 Task { await self.rehideTemporarilyShownItems() }
