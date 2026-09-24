@@ -2815,7 +2815,7 @@ extension MenuBarItemManager {
     /// clicks it, then schedules a rehide.
     ///
     /// - Returns: `true` if the item was successfully moved **and** clicked;
-    ///   `false` if either step failed (the caller may attempt a fallback click).
+    ///   `false` if either step failed. A failed click is already retried once.
     @discardableResult
     func temporarilyShow(item: MenuBarItem, clickingWith mouseButton: CGMouseButton, on displayID: CGDirectDisplayID? = nil, fastPath: Bool = false) async -> Bool {
         guard let appState else {
@@ -2993,10 +2993,17 @@ extension MenuBarItemManager {
         do {
             try await click(item: clickItem, with: mouseButton, skipInputPause: true)
         } catch {
-            MenuBarItemManager.diagLog.error("Error clicking item: \(error)")
-            // Icon is now visible but the click failed. Return false so the
-            // caller can attempt a fallback click with live bounds.
-            return false
+            // The item is now visible, so one retry with live bounds is safe.
+            // This must stay here rather than in callers: a caller seeing
+            // `false` can't tell a failed click from a failed move, and
+            // clicking an item that never moved hits nothing.
+            MenuBarItemManager.diagLog.warning("Error clicking item: \(error), retrying once")
+            do {
+                try await click(item: clickItem, with: mouseButton, skipInputPause: true)
+            } catch {
+                MenuBarItemManager.diagLog.error("Error clicking item on retry: \(error)")
+                return false
+            }
         }
 
         await eventSleep(for: .milliseconds(100))
