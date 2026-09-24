@@ -2941,7 +2941,12 @@ extension MenuBarItemManager {
             // Keep the pending relocation: move() can throw after its events
             // already took effect, leaving the item visible with no rehide
             // context. relocatePendingItems moves it back on the next cache
-            // cycle, or drops the entry if the item stayed hidden.
+            // cycle, or drops the entry if the item stayed hidden. Force that
+            // cycle: an unchanged window list would otherwise skip it.
+            Task { [weak self] in
+                try? await Task.sleep(for: MenuBarItemManager.uiSettleDelay)
+                await self?.cacheItemsRegardless(skipRecentMoveCheck: true)
+            }
             return false
         }
 
