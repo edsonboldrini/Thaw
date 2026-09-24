@@ -2465,11 +2465,13 @@ extension MenuBarItemManager {
         }
 
         // Register the cleanup before the cancellable sleep below, so a
-        // cancelled click still puts the cursor back.
+        // cancelled or failed click still puts the cursor back. Only a
+        // successful click leaves it on the item.
         let keepCursorOnItem = appState?.settings.advanced.keepCursorOnClickedItem == true
         var cursorWasHidden = false
+        var clickSucceeded = false
         defer {
-            if !keepCursorOnItem {
+            if !(keepCursorOnItem && clickSucceeded) {
                 MouseHelpers.warpCursor(to: mouseLocation)
             }
             if cursorWasHidden {
@@ -2500,6 +2502,7 @@ extension MenuBarItemManager {
                 timeout: timeout,
                 repeating: 2 // Double mouse up prevents invalid item state.
             )
+            clickSucceeded = true
 
             // Update timeout cache with successful duration
             let successDuration = Duration.milliseconds(Date.now.timeIntervalSince(eventStartTime) * 1000)
