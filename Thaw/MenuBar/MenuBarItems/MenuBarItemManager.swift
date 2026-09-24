@@ -2464,6 +2464,19 @@ extension MenuBarItemManager {
             throw EventError.eventCreationFailure(item)
         }
 
+        // Register the cleanup before the cancellable sleep below, so a
+        // cancelled click still puts the cursor back.
+        let keepCursorOnItem = appState?.settings.advanced.keepCursorOnClickedItem == true
+        var cursorWasHidden = false
+        defer {
+            if !keepCursorOnItem {
+                MouseHelpers.warpCursor(to: mouseLocation)
+            }
+            if cursorWasHidden {
+                MouseHelpers.showCursor()
+            }
+        }
+
         // Warp the cursor to the click point so the Window Server's hit-test
         // matches the event coordinates rather than the cursor's current position.
         MouseHelpers.warpCursor(to: clickPoint)
@@ -2472,13 +2485,7 @@ extension MenuBarItemManager {
         // old position (e.g. the Apple menu) instead of the warped target.
         try await Task.sleep(for: .milliseconds(10))
         MouseHelpers.hideCursor()
-        let keepCursorOnItem = appState?.settings.advanced.keepCursorOnClickedItem == true
-        defer {
-            if !keepCursorOnItem {
-                MouseHelpers.warpCursor(to: mouseLocation)
-            }
-            MouseHelpers.showCursor()
-        }
+        cursorWasHidden = true
 
         let eventStartTime = Date.now
         do {
