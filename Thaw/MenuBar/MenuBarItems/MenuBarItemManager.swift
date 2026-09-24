@@ -80,24 +80,25 @@ actor SimpleSemaphore {
                 try await Task.sleep(for: timeout)
                 return .timedOut
             }
-            guard let first = try await group.next() else {
-                preconditionFailure("SimpleSemaphore.wait: task group unexpectedly empty")
+            let first: Result<WaitOutcome, any Error>
+            do {
+                guard let next = try await group.next() else {
+                    preconditionFailure("SimpleSemaphore.wait: task group unexpectedly empty")
+                }
+                first = .success(next)
+            } catch {
+                first = .failure(error)
             }
             group.cancelAll()
-            if first == .timedOut {
-                // The acquire child can still win the race against cancelAll();
-                // give back a permit that nobody will use.
-                do {
-                    while let drained = try await group.next() {
-                        if drained == .acquired {
-                            self.signal()
-                        }
-                    }
-                } catch is CancellationError {}
-            } else {
-                while await (try? group.next()) != nil {}
+            // Unless `first` is the acquire, a permit the acquire child took
+            // (it can win the race against cancelAll()) has no owner: give it
+            // back. That includes a cancellation thrown by the sleep child.
+            while let drained = await group.nextResult() {
+                if case .success(.acquired) = drained {
+                    self.signal()
+                }
             }
-            return first
+            return try first.get()
         }
         if outcome == .timedOut {
             throw TimeoutError()
