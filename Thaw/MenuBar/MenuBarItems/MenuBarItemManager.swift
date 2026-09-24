@@ -60,31 +60,57 @@ actor SimpleSemaphore {
     /// An error that indicates the semaphore wait timed out.
     struct TimeoutError: Error {}
 
+    private enum WaitOutcome {
+        case acquired
+        case timedOut
+    }
+
     /// Waits for, or decrements, the semaphore with a timeout.
     /// Throws ``CancellationError`` on cancellation or
     /// ``TimeoutError`` on timeout.
+    ///
+    /// On `TimeoutError` no permit is held; on normal return exactly one is.
     func wait(timeout: Duration) async throws {
-        try await withThrowingTaskGroup(of: Void.self) { group in
+        let outcome: WaitOutcome = try await withThrowingTaskGroup(of: WaitOutcome.self) { group in
             group.addTask {
                 try await self.wait()
+                return .acquired
             }
             group.addTask {
                 try await Task.sleep(for: timeout)
-                throw TimeoutError()
+                return .timedOut
             }
-            // The first task to finish (or throw) wins.
-            _ = try await group.next()
+            guard let first = try await group.next() else {
+                preconditionFailure("SimpleSemaphore.wait: task group unexpectedly empty")
+            }
             group.cancelAll()
+            if first == .timedOut {
+                // The acquire child can still win the race against cancelAll();
+                // give back a permit that nobody will use.
+                do {
+                    while let drained = try await group.next() {
+                        if drained == .acquired {
+                            self.signal()
+                        }
+                    }
+                } catch is CancellationError {}
+            } else {
+                while await (try? group.next()) != nil {}
+            }
+            return first
+        }
+        if outcome == .timedOut {
+            throw TimeoutError()
         }
     }
 
     /// Signals the semaphore, resuming the next waiter if present.
     func signal() {
-        if let waiter = waiters.first {
-            waiters.removeFirst()
-            waiter.continuation.resume(returning: ())
-        } else {
-            value += 1
+        // wait() already decremented for every queued waiter, so always
+        // increment; skipping it when waking a waiter leaks a permit.
+        value += 1
+        if value <= 0, !waiters.isEmpty {
+            waiters.removeFirst().continuation.resume(returning: ())
         }
     }
 }
@@ -2115,8 +2141,7 @@ extension MenuBarItemManager {
         do {
             try await eventSemaphore.wait(timeout: .seconds(5))
         } catch is SimpleSemaphore.TimeoutError {
-            MenuBarItemManager.diagLog.error("eventSemaphore timed out in postMoveEvents, forcing signal and retrying")
-            await eventSemaphore.signal()
+            MenuBarItemManager.diagLog.error("eventSemaphore timed out in postMoveEvents")
             throw EventError.cannotComplete
         }
         defer { Task.detached { [eventSemaphore] in await eventSemaphore.signal() } }
@@ -2403,8 +2428,7 @@ extension MenuBarItemManager {
         do {
             try await eventSemaphore.wait(timeout: .seconds(5))
         } catch is SimpleSemaphore.TimeoutError {
-            MenuBarItemManager.diagLog.error("eventSemaphore timed out in postClickEvents for \(item.logString), forcing signal and retrying")
-            await eventSemaphore.signal()
+            MenuBarItemManager.diagLog.error("eventSemaphore timed out in postClickEvents for \(item.logString)")
             throw EventError.cannotComplete
         }
         defer { Task.detached { [eventSemaphore] in await eventSemaphore.signal() } }
