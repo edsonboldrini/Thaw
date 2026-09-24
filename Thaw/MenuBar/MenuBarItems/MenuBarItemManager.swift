@@ -2019,12 +2019,14 @@ extension MenuBarItemManager {
 
         switch destination {
         case .leftOfItem:
-            start = CGPoint(x: targetBounds.minX, y: targetBounds.minY)
+            end = CGPoint(x: targetBounds.minX, y: targetBounds.minY)
         case .rightOfItem:
-            start = CGPoint(x: targetBounds.maxX, y: targetBounds.minY)
+            end = CGPoint(x: targetBounds.maxX, y: targetBounds.minY)
         }
 
-        end = start
+        // Off every display, so the window server can't hit-test the mouse-down
+        // onto whatever sits at the destination (on macOS 15, Thaw's own control item).
+        start = CGPoint(x: 20000, y: 20000)
 
         MenuBarItemManager.diagLog.debug(
             "Move points: startX=\(start.x) endX=\(end.x) startY=\(start.y) targetMinX=\(targetBounds.minX) itemMinX=\(itemBounds.minX) targetTag=\(destination.targetItem.tag) itemTag=\(item.tag) display=\(displayID)"
@@ -2150,7 +2152,7 @@ extension MenuBarItemManager {
         MenuBarItemManager.diagLog.debug("Move operation timeout: \(timeout)")
 
         lastMoveOperationTimestamp = .now
-        MouseHelpers.warpCursor(to: targetPoints.start)
+        MouseHelpers.warpCursor(to: targetPoints.end)
         MouseHelpers.hideCursor()
         defer {
             if let mouseLocation {
