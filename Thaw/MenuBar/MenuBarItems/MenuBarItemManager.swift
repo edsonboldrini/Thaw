@@ -2950,6 +2950,16 @@ extension MenuBarItemManager {
             runRehideTimer()
         }
 
+        // move() returns normally, rather than throwing, when its last attempt
+        // leaves the item short of its destination. Don't click an item that
+        // may still be hidden, but keep the context above so the rehide timer
+        // returns the item even if it arrives late.
+        let reachedDestination = (try? await itemHasCorrectPosition(item: item, for: moveDestination, on: resolvedDisplayID)) ?? false
+        guard reachedDestination else {
+            MenuBarItemManager.diagLog.warning("temporarilyShow: \(item.logString) did not reach its destination, not clicking")
+            return false
+        }
+
         let clickItem: MenuBarItem
         if fastPath {
             // Fast path: lightweight settle (max 150 ms, 15 ms poll) so the
