@@ -32822,6 +32822,220 @@
           }
         }
       }
+    },
+    "Keep cursor on clicked item" : {
+      "comment" : "A toggle that lets the user choose whether the cursor stays on a menu bar item after Thaw clicks it.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keep cursor on clicked item"
+          }
+        }
+      }
+    },
+    "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was." : {
+      "comment" : "An annotation explaining the setting that keeps the cursor on a menu bar item after Thaw clicks it.",
+      "localizations" : {
+        "cs" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "hu" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "th" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

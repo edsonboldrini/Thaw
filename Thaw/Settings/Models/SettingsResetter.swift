@@ -59,6 +59,7 @@ extension AppSettings {
         advanced.showMenuBarTooltips = Defaults.DefaultValue.showMenuBarTooltips
         advanced.iconRefreshInterval = Defaults.DefaultValue.iconRefreshInterval
         advanced.enableDiagnosticLogging = Defaults.DefaultValue.enableDiagnosticLogging
+        advanced.keepCursorOnClickedItem = Defaults.DefaultValue.keepCursorOnClickedItem
     }
 
     /// Resets Hotkeys settings to their default values.

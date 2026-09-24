@@ -54,6 +54,10 @@ final class AdvancedSettings: ObservableObject {
     /// full sorting on notched displays.
     @Published var useLCSSortingOnNotchedDisplays = Defaults.DefaultValue.useLCSSortingOnNotchedDisplays
 
+    /// A Boolean value that indicates whether the cursor stays on a menu bar
+    /// item after Thaw clicks it, instead of returning to where it was.
+    @Published var keepCursorOnClickedItem = Defaults.DefaultValue.keepCursorOnClickedItem
+
     /// Storage for internal observers.
     private var cancellables = Set<AnyCancellable>()
 
@@ -80,6 +84,7 @@ final class AdvancedSettings: ObservableObject {
         Defaults.ifPresent(key: .iconRefreshInterval, assign: &iconRefreshInterval)
         Defaults.ifPresent(key: .enableDiagnosticLogging, assign: &enableDiagnosticLogging)
         Defaults.ifPresent(key: .useLCSSortingOnNotchedDisplays, assign: &useLCSSortingOnNotchedDisplays)
+        Defaults.ifPresent(key: .keepCursorOnClickedItem, assign: &keepCursorOnClickedItem)
 
         Defaults.ifPresent(key: .sectionDividerStyle) { rawValue in
             if let style = SectionDividerStyle(rawValue: rawValue) {
@@ -174,6 +179,13 @@ final class AdvancedSettings: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { enable in
                 Defaults.set(enable, forKey: .useLCSSortingOnNotchedDisplays)
+            }
+            .store(in: &c)
+
+        $keepCursorOnClickedItem
+            .receive(on: DispatchQueue.main)
+            .sink { enable in
+                Defaults.set(enable, forKey: .keepCursorOnClickedItem)
             }
             .store(in: &c)
 

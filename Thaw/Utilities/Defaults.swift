@@ -174,6 +174,7 @@ extension Defaults {
         static let iconRefreshInterval: TimeInterval = 0.5
         static let enableDiagnosticLogging = false
         static let useLCSSortingOnNotchedDisplays = false
+        static let keepCursorOnClickedItem = false
         static let useOptionClickToShowAlwaysHiddenSection = false
 
         // MARK: Search
@@ -235,6 +236,7 @@ extension Defaults {
         case showMenuBarTooltips = "ShowMenuBarTooltips"
         case enableDiagnosticLogging = "EnableDiagnosticLogging"
         case useLCSSortingOnNotchedDisplays = "UseLCSSortingOnNotchedDisplays"
+        case keepCursorOnClickedItem = "KeepCursorOnClickedItem"
         case useOptionClickToShowAlwaysHiddenSection = "UseOptionClickToShowAlwaysHiddenSection"
 
         // MARK: Search

@@ -59,6 +59,7 @@ struct AdvancedSettingsPane: View {
                 useLCSSortingOnNotchedDisplays
                 hideApplicationMenus
                 enableSecondaryContextMenu
+                keepCursorOnClickedItem
                 showIceBarAtMouseLocationOnHotkey
                 showOnHoverDelay
                 iconRefreshInterval
@@ -131,6 +132,16 @@ struct AdvancedSettingsPane: View {
                 Text(style.localized).tag(style)
             }
         }
+    }
+
+    private var keepCursorOnClickedItem: some View {
+        Toggle(
+            "Keep cursor on clicked item",
+            isOn: $settings.keepCursorOnClickedItem
+        )
+        .annotation(
+            "Leave the cursor on a menu bar item after Thaw opens it, instead of returning it to where it was."
+        )
     }
 
     private var useLCSSortingOnNotchedDisplays: some View {

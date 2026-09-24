@@ -2471,8 +2471,11 @@ extension MenuBarItemManager {
         // old position (e.g. the Apple menu) instead of the warped target.
         try await Task.sleep(for: .milliseconds(10))
         MouseHelpers.hideCursor()
+        let keepCursorOnItem = appState?.settings.advanced.keepCursorOnClickedItem == true
         defer {
-            MouseHelpers.warpCursor(to: mouseLocation)
+            if !keepCursorOnItem {
+                MouseHelpers.warpCursor(to: mouseLocation)
+            }
             MouseHelpers.showCursor()
         }
 
