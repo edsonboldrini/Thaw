@@ -37,17 +37,23 @@ func check(_ name: String, _ ok: Bool, _ detail: String = "") {
 //    increment when it woke a waiter).
 do {
     let sem = SimpleSemaphore(value: 1)
-    await withTaskGroup(of: Void.self) { group in
+    let acquired = await withTaskGroup(of: Bool.self) { group in
         for _ in 0 ..< 200 {
             group.addTask {
-                guard (try? await sem.wait(timeout: .seconds(5))) != nil else { return }
+                guard (try? await sem.wait(timeout: .seconds(5))) != nil else { return false }
                 try? await Task.sleep(for: .microseconds(200))
                 await sem.signal()
+                return true
             }
         }
+        return await group.reduce(0) { $0 + ($1 ? 1 : 0) }
     }
     let n = await permits(sem)
-    check("contended hand-offs keep exactly one permit", n == 1, "permits=\(n)")
+    check(
+        "all 200 contended hand-offs succeed and keep exactly one permit",
+        acquired == 200 && n == 1,
+        "acquired=\(acquired) permits=\(n)"
+    )
 }
 
 // 2. A timed-out wait holds no permit.
@@ -66,12 +72,22 @@ do {
 do {
     let sem = SimpleSemaphore(value: 1)
     var leaked = 0
+    var neverQueued = 0
     for i in 0 ..< 500 {
         try await sem.wait()
         let waiter = Task {
             if (try? await sem.wait(timeout: .seconds(2))) != nil {
                 await sem.signal()
             }
+        }
+        // Only race once the waiter is actually queued; otherwise signal()
+        // just restores the permit and the iteration tests nothing.
+        let deadline = ContinuousClock.now + .seconds(1)
+        while await sem.waiterCount == 0, ContinuousClock.now < deadline {
+            await Task.yield()
+        }
+        if await sem.waiterCount == 0 {
+            neverQueued += 1
         }
         try? await Task.sleep(for: .microseconds(i % 7 * 50))
         async let s: Void = sem.signal()
@@ -90,7 +106,11 @@ do {
             }
         }
     }
-    check("cancel racing signal never strands a permit (500 runs)", leaked == 0, "bad runs=\(leaked)")
+    check(
+        "cancel racing signal never strands a permit (500 runs)",
+        leaked == 0 && neverQueued == 0,
+        "bad runs=\(leaked) never queued=\(neverQueued)"
+    )
 }
 
 print(failures == 0 ? "ALL PASSED" : "\(failures) FAILED")

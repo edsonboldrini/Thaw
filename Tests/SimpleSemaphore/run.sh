@@ -20,6 +20,12 @@ else
   cat "$root/$source_file"
 fi | awk '/^actor SimpleSemaphore \{/{on=1} on{print} on && /^\}/{on=0}' > "$work/body.swift"
 
-{ echo "import Foundation"; cat "$work/body.swift"; } > "$work/SimpleSemaphore.swift"
+# A private member is visible to an extension in the same file, so the test-only
+# accessor is appended here instead of being added to the app code.
+{
+  echo "import Foundation"
+  cat "$work/body.swift"
+  echo "extension SimpleSemaphore { var waiterCount: Int { waiters.count } }"
+} > "$work/SimpleSemaphore.swift"
 swiftc -O -swift-version 5 -o "$work/check" "$work/SimpleSemaphore.swift" "$here/main.swift"
 "$work/check"
