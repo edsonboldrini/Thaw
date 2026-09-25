@@ -116,6 +116,34 @@ actor SimpleSemaphore {
     }
 }
 
+// MARK: - Move recovery
+
+/// Where move drags start: off every display, so macOS 15 delivers the
+/// mouse-down to the dragged item rather than to whatever sits at the
+/// destination.
+let offscreenMoveStart = CGPoint(x: 20000, y: 20000)
+
+/// Returns whether `point` is where a mouse event posted at
+/// ``offscreenMoveStart`` leaves the cursor. The window server keeps the
+/// cursor on a display, so that is the nearest pixel of the nearest display.
+func isAtOffscreenClamp(_ point: CGPoint, displays: [CGRect]) -> Bool {
+    let clampPoints = displays.map { rect in
+        CGPoint(
+            x: min(max(offscreenMoveStart.x, rect.minX), rect.maxX - 1),
+            y: min(max(offscreenMoveStart.y, rect.minY), rect.maxY - 1)
+        )
+    }
+    func distanceToStart(_ p: CGPoint) -> CGFloat {
+        hypot(offscreenMoveStart.x - p.x, offscreenMoveStart.y - p.y)
+    }
+    guard let nearest = clampPoints.min(by: { distanceToStart($0) < distanceToStart($1) }) else {
+        return false
+    }
+    return abs(point.x - nearest.x) <= 1 && abs(point.y - nearest.y) <= 1
+}
+
+// MARK: - End move recovery
+
 /// Manager for menu bar items.
 @MainActor
 final class MenuBarItemManager: ObservableObject {
@@ -2053,7 +2081,7 @@ extension MenuBarItemManager {
 
         // Off every display, so the window server can't hit-test the mouse-down
         // onto whatever sits at the destination (on macOS 15, Thaw's own control item).
-        start = CGPoint(x: 20000, y: 20000)
+        start = offscreenMoveStart
 
         MenuBarItemManager.diagLog.debug(
             "Move points: startX=\(start.x) endX=\(end.x) startY=\(start.y) targetMinX=\(targetBounds.minX) itemMinX=\(itemBounds.minX) targetTag=\(destination.targetItem.tag) itemTag=\(item.tag) display=\(displayID)"
@@ -2356,6 +2384,17 @@ extension MenuBarItemManager {
         defer {
             MouseHelpers.warpCursor(to: mouseLocation)
             MouseHelpers.showCursor()
+            // A mouse-down that an unresponsive app hadn't consumed yet can be
+            // delivered after the warp above and drag the cursor to where
+            // offscreenMoveStart clamps. Check again once it has had time to land.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(200))
+                let displays = NSScreen.screens.map { CGDisplayBounds($0.displayID) }
+                if let current = try? self.getMouseLocation(), isAtOffscreenClamp(current, displays: displays) {
+                    MenuBarItemManager.diagLog.debug("move: cursor left at the off-screen clamp point, restoring it")
+                    MouseHelpers.warpCursor(to: mouseLocation)
+                }
+            }
         }
 
         let maxAttempts = max(1, maxMoveAttempts)
