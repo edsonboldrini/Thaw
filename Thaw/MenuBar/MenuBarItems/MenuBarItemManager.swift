@@ -142,6 +142,33 @@ func isAtOffscreenClamp(_ point: CGPoint, displays: [CGRect]) -> Bool {
     return abs(point.x - nearest.x) <= 1 && abs(point.y - nearest.y) <= 1
 }
 
+/// Skips items whose moves keep timing out, so an app that never answers
+/// isn't dragged, with the cursor hidden, on every cache cycle. The wait
+/// starts at 5 minutes and doubles with each failure, up to 1 hour.
+struct MoveFailureCooldown {
+    private static let baseWait: TimeInterval = 5 * 60
+    private static let maxWait: TimeInterval = 60 * 60
+
+    private var entries = [String: (failures: Int, until: Date)]()
+
+    mutating func recordFailure(_ id: String, at now: Date) {
+        let failures = (entries[id]?.failures ?? 0) + 1
+        let wait = min(Self.baseWait * pow(2, Double(failures - 1)), Self.maxWait)
+        entries[id] = (failures, now.addingTimeInterval(wait))
+    }
+
+    mutating func recordSuccess(_ id: String) {
+        entries[id] = nil
+    }
+
+    func isCoolingDown(_ id: String, at now: Date) -> Bool {
+        guard let until = entries[id]?.until else {
+            return false
+        }
+        return now < until
+    }
+}
+
 // MARK: - End move recovery
 
 /// Manager for menu bar items.
@@ -192,6 +219,9 @@ final class MenuBarItemManager: ObservableObject {
 
     /// Persisted identifiers of menu bar items we've already seen.
     private var knownItemIdentifiers = Set<String>()
+    /// Items whose background moves keep failing, skipped for a while so the
+    /// cursor isn't hidden and warped on every cache cycle.
+    private var moveFailureCooldown = MoveFailureCooldown()
     /// Suppresses the next automatic relocation of newly seen leftmost items.
     private var suppressNextNewLeftmostItemRelocation = false
     /// Continuation to signal when background cache task completes.
@@ -3498,7 +3528,8 @@ extension MenuBarItemManager {
             // are already filtered out above, so this only affects items that
             // macOS placed in the hidden zone after an app relaunch.
             let isNewID = previousIDs.isEmpty ? isNewIdentity : !previousIDs.contains(item.windowID)
-            return notPlacedHidden && (isNewIdentity || isNewID)
+            let isCoolingDown = moveFailureCooldown.isCoolingDown(identifier, at: .now)
+            return notPlacedHidden && (isNewIdentity || isNewID) && !isCoolingDown
         }
         guard let candidate else {
             if !leftmostItems.isEmpty && savedSectionForIdentifier.isEmpty == false {
@@ -3523,8 +3554,10 @@ extension MenuBarItemManager {
                 to: destination,
                 skipInputPause: true
             )
+            moveFailureCooldown.recordSuccess(identifier)
         } catch {
             MenuBarItemManager.diagLog.error("Failed to relocate \(candidate.logString): \(error)")
+            moveFailureCooldown.recordFailure(identifier, at: .now)
             return false
         }
 
@@ -3588,6 +3621,12 @@ extension MenuBarItemManager {
                 continue
             }
 
+            // A move that keeps failing is retried after its cooldown, not on
+            // every cache cycle. The pending entry stays until it succeeds.
+            guard !moveFailureCooldown.isCoolingDown(tagIdentifier, at: .now) else {
+                continue
+            }
+
             // Move the item back to its original section.
             // Try to use the stored destination from the persisted data to preserve ordering.
             let destination: MoveDestination
@@ -3630,6 +3669,7 @@ extension MenuBarItemManager {
                 try await move(item: item, to: destination, skipInputPause: true)
                 pendingRelocations.removeValue(forKey: tagIdentifier)
                 pendingReturnDestinations.removeValue(forKey: tagIdentifier)
+                moveFailureCooldown.recordSuccess(tagIdentifier)
                 didRelocate = true
             } catch {
                 MenuBarItemManager.diagLog.error(
@@ -3638,6 +3678,7 @@ extension MenuBarItemManager {
                     \(targetSection.logString): \(error)
                     """
                 )
+                moveFailureCooldown.recordFailure(tagIdentifier, at: .now)
             }
         }
 

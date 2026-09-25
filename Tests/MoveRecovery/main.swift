@@ -54,5 +54,51 @@ do {
     )
 }
 
+// Seam 2: skipping items whose moves keep timing out. The schedule is the
+// agreed one: 5 minutes after the first failure, doubling, capped at 1 hour.
+do {
+    let t0 = Date(timeIntervalSinceReferenceDate: 0)
+    func at(_ seconds: TimeInterval) -> Date {
+        t0.addingTimeInterval(seconds)
+    }
+
+    var cooldown = MoveFailureCooldown()
+    check("an item that never failed is not skipped", !cooldown.isCoolingDown("anydesk", at: t0))
+
+    cooldown.recordFailure("anydesk", at: t0)
+    check(
+        "first failure skips the item for 5 minutes",
+        cooldown.isCoolingDown("anydesk", at: at(299)) && !cooldown.isCoolingDown("anydesk", at: at(300))
+    )
+    check("other items are not affected", !cooldown.isCoolingDown("toolbox", at: at(1)))
+
+    cooldown.recordFailure("anydesk", at: at(300))
+    check(
+        "second failure doubles the wait to 10 minutes",
+        cooldown.isCoolingDown("anydesk", at: at(899)) && !cooldown.isCoolingDown("anydesk", at: at(900))
+    )
+
+    // Failures 3, 4, 5 and 6 wait 20, 40, then the 60-minute cap twice.
+    var now = at(900)
+    for _ in 3 ... 6 {
+        cooldown.recordFailure("anydesk", at: now)
+        now = now.addingTimeInterval(4000)
+    }
+    let sixth = now.addingTimeInterval(-4000)
+    check(
+        "the wait is capped at 1 hour",
+        cooldown.isCoolingDown("anydesk", at: sixth.addingTimeInterval(3599))
+            && !cooldown.isCoolingDown("anydesk", at: sixth.addingTimeInterval(3600))
+    )
+
+    cooldown.recordSuccess("anydesk")
+    check("a success clears the cooldown", !cooldown.isCoolingDown("anydesk", at: sixth.addingTimeInterval(1)))
+    cooldown.recordFailure("anydesk", at: t0)
+    check(
+        "after a success the next failure starts again at 5 minutes",
+        cooldown.isCoolingDown("anydesk", at: at(299)) && !cooldown.isCoolingDown("anydesk", at: at(300))
+    )
+}
+
 print(failures == 0 ? "ALL PASSED" : "\(failures) FAILED")
 exit(failures == 0 ? 0 : 1)
