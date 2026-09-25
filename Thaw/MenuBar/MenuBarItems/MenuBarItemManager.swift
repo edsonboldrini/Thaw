@@ -2457,6 +2457,12 @@ extension MenuBarItemManager {
                 }
             } catch {
                 MenuBarItemManager.diagLog.debug("Attempt \(n) failed: \(error)")
+                // An item that doesn't answer the first drag doesn't answer the
+                // later ones either, and every attempt parks the cursor where
+                // offscreenMoveStart clamps. Give up instead of retrying.
+                if case EventError.itemResponseTimeout = error {
+                    throw error
+                }
                 if n < maxAttempts {
                     try await waitForMoveOperationBuffer()
                     continue
