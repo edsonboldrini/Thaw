@@ -304,4 +304,63 @@ struct MoveEventCoordinatesTests {
             #expect(!strategy.keepsPlannedReleasePoint(targetDisposition: .selectedDisplay))
         }
     }
+
+    // MARK: macOS 15 (#748)
+
+    /// Before macOS 26 the window server hit-tests a synthetic press. One at
+    /// the destination lands on whatever is there (Thaw's own icon, or the
+    /// app menu when an off-screen point is clamped to the display edge), so
+    /// the press goes off every display and only the release keeps the
+    /// destination.
+    @Test("Pressing off-screen moves a teleport's press off every display")
+    func offScreenPressForTeleport() {
+        let destination = CGPoint(x: -4357, y: -1068)
+        let eventLocations = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: destination, end: destination),
+            faithfulDragStart: nil,
+            pressesOffScreen: true
+        )
+        #expect(eventLocations.press == CGPoint(x: 20000, y: 20000))
+        #expect(eventLocations.release == destination)
+    }
+
+    @Test("Pressing off-screen also overrides a source-anchored press")
+    func offScreenPressOverridesSourceAnchoredStart() {
+        let eventLocations = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: CGPoint(x: -5202, y: 15), end: CGPoint(x: -5202, y: 15)),
+            faithfulDragStart: nil,
+            sourceAnchoredStart: CGPoint(x: -4432, y: 15),
+            pressesOffScreen: true
+        )
+        #expect(eventLocations.press == CGPoint(x: 20000, y: 20000))
+    }
+
+    @Test("A faithful drag still presses on the item when pressing off-screen")
+    func faithfulDragIgnoresOffScreenPress() {
+        let faithfulStart = CGPoint(x: 100, y: 15)
+        let eventLocations = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: CGPoint(x: 300, y: 15), end: CGPoint(x: 300, y: 15)),
+            faithfulDragStart: faithfulStart,
+            pressesOffScreen: true
+        )
+        #expect(eventLocations.press == faithfulStart)
+    }
+
+    @Test("The cursor goes to the release point when the press is off-screen")
+    func cursorFollowsReleaseForOffScreenPress() {
+        let destination = CGPoint(x: 800, y: 15)
+        let offScreen = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: destination, end: destination),
+            faithfulDragStart: nil,
+            pressesOffScreen: true
+        )
+        #expect(offScreen.cursor == destination)
+
+        let onItem = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: destination, end: destination),
+            faithfulDragStart: nil,
+            sourceAnchoredStart: CGPoint(x: 500, y: 15)
+        )
+        #expect(onItem.cursor == CGPoint(x: 500, y: 15))
+    }
 }

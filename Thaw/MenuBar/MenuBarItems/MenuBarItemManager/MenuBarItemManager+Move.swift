@@ -399,19 +399,42 @@ extension MenuBarItemManager {
     /// stamped directly at the destination, including when that destination
     /// is parked off-screen.
     nonisolated struct MoveEventLocations: Equatable {
+        /// Off every display, so the window server hit-tests nothing.
+        static let offScreenPress = CGPoint(x: 20000, y: 20000)
+
         let press: CGPoint
         let release: CGPoint
+
+        /// Where the cursor is warped: the release point when the press is
+        /// off-screen, since warping there would park the cursor in the
+        /// display's corner.
+        var cursor: CGPoint {
+            press == Self.offScreenPress ? release : press
+        }
+    }
+
+    /// Whether moves press off-screen (#748). Before macOS 26 the window
+    /// server hit-tests a synthetic press, so one at the destination lands on
+    /// whatever is there: Thaw's own icon, or the app menu when an off-screen
+    /// point is clamped to the display edge.
+    static nonisolated var movesPressOffScreen: Bool {
+        if #available(macOS 26.0, *) { false } else { true }
     }
 
     static nonisolated func moveEventLocations(
         targetPoints: (start: CGPoint, end: CGPoint),
         faithfulDragStart: CGPoint?,
-        sourceAnchoredStart: CGPoint? = nil
+        sourceAnchoredStart: CGPoint? = nil,
+        pressesOffScreen: Bool = false
     ) -> MoveEventLocations {
-        MoveEventLocations(
-            press: faithfulDragStart ?? sourceAnchoredStart ?? targetPoints.start,
-            release: targetPoints.end
-        )
+        let press = if let faithfulDragStart {
+            faithfulDragStart
+        } else if pressesOffScreen {
+            MoveEventLocations.offScreenPress
+        } else {
+            sourceAnchoredStart ?? targetPoints.start
+        }
+        return MoveEventLocations(press: press, release: targetPoints.end)
     }
 
     /// Exact ordinal positions from one WindowServer snapshot. Verification
@@ -1231,7 +1254,8 @@ extension MenuBarItemManager {
             faithfulDragStart: initialDragPlan?.first?.point,
             sourceAnchoredStart: initialStrategy == .sourceAnchoredTeleport
                 ? CGPoint(x: initialEndpoints.source.bounds.midX, y: initialEndpoints.source.bounds.midY)
-                : nil
+                : nil,
+            pressesOffScreen: Self.movesPressOffScreen
         )
 
         // Capture mouse location only when this call owns the cursor warp.
@@ -1246,7 +1270,7 @@ extension MenuBarItemManager {
         // there. The 20ms eventSleep that follows the warp is only needed
         // when slow apps have to register the tracking events before the
         // mouseDown; irrelevant offscreen.
-        let warpPoint = initialEventLocations.press
+        let warpPoint = initialEventLocations.cursor
         let warpIsOnScreen = initialGeometry.target == .selectedDisplay
         if warpIsOnScreen {
             // Load-bearing for event delivery — keep unconditionally, even
@@ -1339,10 +1363,11 @@ extension MenuBarItemManager {
             faithfulDragStart: dragPlan?.first?.point,
             sourceAnchoredStart: strategy == .sourceAnchoredTeleport
                 ? CGPoint(x: itemBounds.midX, y: itemBounds.midY)
-                : nil
+                : nil,
+            pressesOffScreen: Self.movesPressOffScreen
         )
-        if warpIsOnScreen, eventLocations.press != warpPoint {
-            MouseHelpers.warpCursor(to: eventLocations.press)
+        if warpIsOnScreen, eventLocations.cursor != warpPoint {
+            MouseHelpers.warpCursor(to: eventLocations.cursor)
         }
         let source = try getEventSource()
         try permitLocalEvents()
