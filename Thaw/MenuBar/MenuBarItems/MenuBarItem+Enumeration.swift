@@ -199,6 +199,22 @@ nonisolated extension MenuBarItem {
         }
     }
 
+    /// Creates items for macOS 15 and earlier, where each status item window
+    /// is owned by the app that created it, so the owner is the source PID
+    /// and no Accessibility lookup is needed.
+    @MainActor
+    static func makeItemsUsingOwnerPIDs(from windows: [WindowInfo]) -> EnumerationSnapshot {
+        let windowsByID = Dictionary(windows.map { ($0.windowID, $0) }, uniquingKeysWith: { first, _ in first })
+        var items = windows.map { MenuBarItem(uncheckedItemWindow: $0, sourcePID: $0.ownerPID) }
+        assignStableInstanceIndices(to: &items, using: windowsByID)
+        return EnumerationSnapshot(
+            items: items,
+            appliedSourcePIDSeeds: [:],
+            windowsByID: windowsByID,
+            controlCenterGeneration: nil
+        )
+    }
+
     @available(macOS 26.0, *)
     @MainActor
     private static func makeItemsWithoutResolvingSourcePID(
@@ -415,11 +431,15 @@ nonisolated extension MenuBarItem {
         diagLog.debug(
             "getMenuBarItems: starting (resolveSourcePID=\(resolveSourcePID))"
         )
-        let snapshot = await getMenuBarItemsExperimental(
-            on: display,
-            option: option,
-            resolveSourcePID: resolveSourcePID
-        )
+        let snapshot = if #available(macOS 26.0, *) {
+            await getMenuBarItemsExperimental(
+                on: display,
+                option: option,
+                resolveSourcePID: resolveSourcePID
+            )
+        } else {
+            makeItemsUsingOwnerPIDs(from: getMenuBarItemWindows(on: display, option: option))
+        }
         diagLog.debug("getMenuBarItems: returned \(snapshot.items.count) items")
         return snapshot
     }
