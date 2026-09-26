@@ -12,7 +12,7 @@ import ObjectiveC
 
 /// A type that uses the Objective-C runtime to store values of a given
 /// type with an object.
-final class ObjectStorage<Value> {
+nonisolated final class ObjectStorage<Value> {
     /// The association policy to use for storage.
     ///
     /// - Note: Regardless of whether a value is stored with a strong or
@@ -55,7 +55,7 @@ final class ObjectStorage<Value> {
 // MARK: - Weak Storage
 
 /// An object containing a weak reference to another object.
-private final class WeakReference {
+private nonisolated final class WeakReference {
     /// A weak reference to an object.
     private(set) weak var object: AnyObject?
 
