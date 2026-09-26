@@ -320,6 +320,7 @@ struct MoveEventCoordinatesTests {
             faithfulDragStart: nil,
             pressesOffScreen: true
         )
+        #expect(eventLocations.pressTarget == .offScreen)
         #expect(eventLocations.press == CGPoint(x: 20000, y: 20000))
         #expect(eventLocations.release == destination)
     }

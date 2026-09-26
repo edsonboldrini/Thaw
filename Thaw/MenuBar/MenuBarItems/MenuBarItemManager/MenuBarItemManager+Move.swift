@@ -399,24 +399,40 @@ extension MenuBarItemManager {
     /// stamped directly at the destination, including when that destination
     /// is parked off-screen.
     nonisolated struct MoveEventLocations: Equatable {
-        /// Off every display, so the window server hit-tests nothing.
-        static let offScreenPress = CGPoint(x: 20000, y: 20000)
+        /// Where a move's mouse-down goes.
+        enum Press: Equatable {
+            /// At a point: the item itself, or the destination.
+            case at(CGPoint)
+            /// Off every display, so the window server hit-tests nothing.
+            case offScreen
+        }
 
-        let press: CGPoint
+        /// The point an off-screen press is posted at.
+        static let offScreenPoint = CGPoint(x: 20000, y: 20000)
+
+        let pressTarget: Press
         let release: CGPoint
+
+        /// The mouse-down location.
+        var press: CGPoint {
+            switch pressTarget {
+            case let .at(point): point
+            case .offScreen: Self.offScreenPoint
+            }
+        }
 
         /// Where the cursor is warped: the release point when the press is
         /// off-screen, since warping there would park the cursor in the
         /// display's corner.
         var cursor: CGPoint {
-            press == Self.offScreenPress ? release : press
+            pressTarget == .offScreen ? release : press
         }
 
         /// Whether the source's position between press and release describes
         /// the move. With an off-screen press the source window follows the
         /// clamped press into a display corner until the release.
         var sourceGeometryIsMeaningfulMidMove: Bool {
-            press != Self.offScreenPress
+            pressTarget != .offScreen
         }
     }
 
@@ -434,14 +450,14 @@ extension MenuBarItemManager {
         sourceAnchoredStart: CGPoint? = nil,
         pressesOffScreen: Bool = false
     ) -> MoveEventLocations {
-        let press = if let faithfulDragStart {
-            faithfulDragStart
+        let pressTarget: MoveEventLocations.Press = if let faithfulDragStart {
+            .at(faithfulDragStart)
         } else if pressesOffScreen {
-            MoveEventLocations.offScreenPress
+            .offScreen
         } else {
-            sourceAnchoredStart ?? targetPoints.start
+            .at(sourceAnchoredStart ?? targetPoints.start)
         }
-        return MoveEventLocations(press: press, release: targetPoints.end)
+        return MoveEventLocations(pressTarget: pressTarget, release: targetPoints.end)
     }
 
     /// Exact ordinal positions from one WindowServer snapshot. Verification
@@ -965,15 +981,14 @@ extension MenuBarItemManager {
         }
     }
 
-    /// Validates both endpoint locations and distinguishes a genuinely parked
-    /// status item from a window belonging to a physical display on the left.
-    private func validateMoveEndpointGeometry(
-        item: MenuBarItem,
-        target: MenuBarItem,
+    /// Builds the location check for one move's endpoints: a genuinely
+    /// parked status item passes, a window on another physical display does
+    /// not. Failures are reported as a stale destination for `item`.
+    private func moveEndpointValidator(
+        reporting item: MenuBarItem,
         snapshot: [MenuBarItem],
-        on displayID: CGDirectDisplayID,
-        validatingSource: Bool = true
-    ) throws -> (source: MoveEndpointDisposition, target: MoveEndpointDisposition) {
+        on displayID: CGDirectDisplayID
+    ) -> (MenuBarItem) throws -> MoveEndpointDisposition {
         let selectedBounds = CGDisplayBounds(displayID)
         let displays = NSScreen.screens.map {
             MoveDisplayGeometry(id: $0.displayID, bounds: CGDisplayBounds($0.displayID))
@@ -993,7 +1008,7 @@ extension MenuBarItemManager {
         }
         let dividerX = dividers.map(\.bounds.maxX).max() ?? selectedBounds.minX
 
-        func disposition(for endpoint: MenuBarItem) throws -> MoveEndpointDisposition {
+        return { endpoint in
             let value = Self.moveEndpointDisposition(
                 bounds: endpoint.bounds,
                 isOnScreen: endpoint.isOnScreen,
@@ -1012,10 +1027,28 @@ extension MenuBarItemManager {
                 throw EventError.staleDestination(item)
             }
         }
-        // An unvalidated source is reported as parked; callers that skip it
-        // only use the target's disposition.
-        let source = try validatingSource ? disposition(for: item) : .parked
-        return try (source, disposition(for: target))
+    }
+
+    /// Validates both endpoint locations.
+    private func validateMoveEndpointGeometry(
+        item: MenuBarItem,
+        target: MenuBarItem,
+        snapshot: [MenuBarItem],
+        on displayID: CGDirectDisplayID
+    ) throws -> (source: MoveEndpointDisposition, target: MoveEndpointDisposition) {
+        let validate = moveEndpointValidator(reporting: item, snapshot: snapshot, on: displayID)
+        return try (validate(item), validate(target))
+    }
+
+    /// Validates the target alone, for the moment after an off-screen press,
+    /// when the source window sits wherever the press was clamped.
+    private func validateMoveTargetGeometry(
+        item: MenuBarItem,
+        target: MenuBarItem,
+        snapshot: [MenuBarItem],
+        on displayID: CGDirectDisplayID
+    ) throws {
+        _ = try moveEndpointValidator(reporting: item, snapshot: snapshot, on: displayID)(target)
     }
 
     private func transportDecision(
@@ -1454,13 +1487,21 @@ extension MenuBarItemManager {
                     destination: destination.targetItem,
                     on: displayID
                 )
-                _ = try validateMoveEndpointGeometry(
-                    item: releaseEndpoints.source,
-                    target: releaseEndpoints.target,
-                    snapshot: releaseEndpoints.snapshot,
-                    on: displayID,
-                    validatingSource: eventLocations.sourceGeometryIsMeaningfulMidMove
-                )
+                if eventLocations.sourceGeometryIsMeaningfulMidMove {
+                    _ = try validateMoveEndpointGeometry(
+                        item: releaseEndpoints.source,
+                        target: releaseEndpoints.target,
+                        snapshot: releaseEndpoints.snapshot,
+                        on: displayID
+                    )
+                } else {
+                    try validateMoveTargetGeometry(
+                        item: releaseEndpoints.source,
+                        target: releaseEndpoints.target,
+                        snapshot: releaseEndpoints.snapshot,
+                        on: displayID
+                    )
+                }
                 let releaseDestination = releaseEndpoints.destination(matching: destination)
                 let releasePoints = getTargetPoints(
                     forMoving: releaseEndpoints.source,
