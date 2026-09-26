@@ -2262,7 +2262,7 @@ final class MenuBarItemManager {
         // physical re-order costs a plist write plus a move batch.
         groupOrderObservationTask?.cancel()
         groupOrderObservationTask = Task { [weak self, weak appState] in
-            let changes = Observations { [weak appState] in
+            let changes = ObservationsCompat { [weak appState] in
                 appState?.itemGroupManager.groupSet
             }
             var isFirst = true
@@ -2375,7 +2375,7 @@ final class MenuBarItemManager {
         // are combined into a single Observations-Task tracking both.
         navigationStateObservationTask = Task { [weak self] in
             guard let appState = self?.appState else { return }
-            let changes = Observations { [weak navigationState = appState.navigationState] in
+            let changes = ObservationsCompat { [weak navigationState = appState.navigationState] in
                 (navigationState?.settingsNavigationIdentifier, navigationState?.isSettingsPresented)
             }
             for await (identifier, isPresented) in changes {

@@ -311,7 +311,7 @@ final class MenuBarManager {
         if let appState {
             let displaySettings = appState.settings.displaySettings
             displayConfigurationsObservationTask = Task { [weak self] in
-                let changes = Observations { displaySettings.configurations }
+                let changes = ObservationsCompat { displaySettings.configurations }
                 for await _ in changes {
                     guard let self else { return }
                     updateControlItemStates()
@@ -324,7 +324,7 @@ final class MenuBarManager {
             // churn hotkey registrations.
             let itemManager = appState.itemManager
             itemCacheHotkeyObservationTask = Task { [weak self] in
-                let changes = Observations { itemManager.itemCache }
+                let changes = ObservationsCompat { itemManager.itemCache }
                 for await _ in changes.debounce(for: .seconds(0.5)) {
                     guard let self else { return }
                     rebuildItemHotkeys()
@@ -333,7 +333,7 @@ final class MenuBarManager {
 
             let general = appState.settings.general
             hideDockIconWhenTogglingObservationTask = Task { [weak self] in
-                let changes = Observations { general.hideDockIconWhenToggling }
+                let changes = ObservationsCompat { general.hideDockIconWhenToggling }
                 for await hideDockIcon in changes {
                     guard let self else { return }
                     reconcileAutomaticApplicationMenuHide(hideDockIconWhenToggling: hideDockIcon)
@@ -342,7 +342,7 @@ final class MenuBarManager {
         }
 
         settingsWindowObservationTask = Task { [weak self] in
-            let changes = Observations { self?.settingsWindow }
+            let changes = ObservationsCompat { self?.settingsWindow }
             for await window in changes {
                 guard let self else { return }
                 guard let window else { continue }
@@ -484,7 +484,7 @@ final class MenuBarManager {
                 // Observed from the effective configuration for the same
                 // reason as updateAverageColorInfoAsync above: the adaptive
                 // start/stop gates must follow the per-Space override.
-                let changes = Observations { appState?.appearanceManager.effectiveConfiguration }
+                let changes = ObservationsCompat { appState?.appearanceManager.effectiveConfiguration }
                 for await config in changes {
                     guard let self else { return }
                     guard let config else { continue }
@@ -536,7 +536,7 @@ final class MenuBarManager {
             attentionObservationTask?.cancel()
             attentionObservationTask = Task { [weak self, weak appState] in
                 var previous: Set<MenuBarItemTag> = []
-                let changes = Observations { appState?.imageCache.tagsSeekingAttention }
+                let changes = ObservationsCompat { appState?.imageCache.tagsSeekingAttention }
                 for await tags in changes {
                     guard let self, let appState, let tags else { continue }
                     defer { previous = tags }

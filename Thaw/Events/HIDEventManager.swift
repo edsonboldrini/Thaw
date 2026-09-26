@@ -575,7 +575,7 @@ final class HIDEventManager {
             let advancedSettings = appState.settings.advanced
             let displaySettings = appState.settings.displaySettings
             hoverSettingsObservationTask = Task { [weak self] in
-                let changes = Observations {
+                let changes = ObservationsCompat {
                     (generalSettings.showOnHover, advancedSettings.showMenuBarTooltips, displaySettings.configurations)
                 }
                 for await (showOnHover, _, _) in changes {
@@ -626,7 +626,7 @@ final class HIDEventManager {
             let itemManagerForWindowBounds = appState.itemManager
             itemCacheWindowBoundsObservationTask = Task { [weak self] in
                 var previous: MenuBarItemManager.ItemCache?
-                let changes = Observations { itemManagerForWindowBounds.itemCache }
+                let changes = ObservationsCompat { itemManagerForWindowBounds.itemCache }
                 for await cache in changes {
                     guard let self else { return }
                     guard cache != previous else { continue }

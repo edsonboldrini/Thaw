@@ -333,7 +333,7 @@ final class MenuBarOverlayPanel: NSPanel, @unchecked Sendable {
             // updateAlphaForMenuBarVisibility(), which combines it with
             // cachedIsMenuBarHiddenBySystem, kept in sync below.
             menuBarManagerObservationTask = Task { [weak self, weak appState] in
-                let changes = Observations { appState?.menuBarManager.isMenuBarHiddenBySystem ?? false }
+                let changes = ObservationsCompat { appState?.menuBarManager.isMenuBarHiddenBySystem ?? false }
                 for await isHidden in changes {
                     guard let self else { return }
                     self.cachedIsMenuBarHiddenBySystem = isHidden
@@ -346,7 +346,7 @@ final class MenuBarOverlayPanel: NSPanel, @unchecked Sendable {
             // effective configuration so a per-Space override switches the
             // window level instantly on Space change.
             appearanceConfigurationObservationTask = Task { [weak self, weak appState] in
-                let changes = Observations { appState?.appearanceManager.effectiveConfiguration }
+                let changes = ObservationsCompat { appState?.appearanceManager.effectiveConfiguration }
                 for await _ in changes {
                     guard let self else { return }
                     self.updateWindowLevel()
@@ -357,7 +357,7 @@ final class MenuBarOverlayPanel: NSPanel, @unchecked Sendable {
             // panel's own isMissionControlActive, instead of each panel
             // running its own probe timer/window.
             missionControlObservationTask = Task { [weak self, weak appState] in
-                let changes = Observations { appState?.appearanceManager.missionControlDetector.isActive ?? false }
+                let changes = ObservationsCompat { appState?.appearanceManager.missionControlDetector.isActive ?? false }
                 for await isActive in changes {
                     guard let self else { return }
                     self.isMissionControlActive = isActive
@@ -777,7 +777,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
                 // visible through this one sequence.
                 appearanceConfigurationObservationTask?.cancel()
                 appearanceConfigurationObservationTask = Task { [weak self, weak appState] in
-                    let changes = Observations { appState?.appearanceManager.effectiveConfiguration }
+                    let changes = ObservationsCompat { appState?.appearanceManager.effectiveConfiguration }
                     for await config in changes {
                         guard let self else { return }
                         guard let config else { continue }
@@ -790,7 +790,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
                 previewConfigurationObservationTask?.cancel()
                 previewConfigurationObservationTask = Task { [weak self, weak appState] in
                     var previous: MenuBarAppearancePartialConfiguration?
-                    let changes = Observations { appState?.appearanceManager.previewConfiguration }
+                    let changes = ObservationsCompat { appState?.appearanceManager.previewConfiguration }
                     for await preview in changes {
                         guard let self else { return }
                         guard preview != previous else { continue }
@@ -803,7 +803,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
                 // longer has an $averageColors publisher.
                 averageColorsObservationTask?.cancel()
                 averageColorsObservationTask = Task { [weak self, weak appState] in
-                    let changes = Observations { appState?.menuBarManager.averageColors ?? [:] }
+                    let changes = ObservationsCompat { appState?.menuBarManager.averageColors ?? [:] }
                     for await colors in changes {
                         guard let self else { return }
                         guard let displayID = self.overlayPanel?.owningScreen.displayID else { continue }
@@ -813,7 +813,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
 
                 wallpaperPalettesObservationTask?.cancel()
                 wallpaperPalettesObservationTask = Task { [weak self, weak appState] in
-                    let changes = Observations { appState?.menuBarManager.wallpaperPalettes ?? [:] }
+                    let changes = ObservationsCompat { appState?.menuBarManager.wallpaperPalettes ?? [:] }
                     for await palettes in changes {
                         guard let self else { return }
                         guard let displayID = self.overlayPanel?.owningScreen.displayID else { continue }
@@ -827,7 +827,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
                 isDraggingMenuBarItemObservationTask?.cancel()
                 isDraggingMenuBarItemObservationTask = Task { [weak self, weak appState] in
                     var previous: Bool?
-                    let changes = Observations { appState?.isDraggingMenuBarItem }
+                    let changes = ObservationsCompat { appState?.isDraggingMenuBarItem }
                     for await isDragging in changes {
                         guard let self else { return }
                         guard let isDragging, isDragging != previous else { continue }

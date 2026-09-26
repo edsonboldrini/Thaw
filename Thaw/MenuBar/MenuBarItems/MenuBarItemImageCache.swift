@@ -543,7 +543,7 @@ final class MenuBarItemImageCache: @unchecked Sendable {
             averageColorInfoObservationTask?.cancel()
             averageColorInfoObservationTask = Task { [weak self, weak appState] in
                 var previous: MenuBarAverageColorInfo?
-                let changes = Observations { appState?.menuBarManager.averageColorInfo }
+                let changes = ObservationsCompat { appState?.menuBarManager.averageColorInfo }
                 for await info in changes {
                     guard let self else { return }
                     guard info != previous else { continue }
@@ -562,7 +562,7 @@ final class MenuBarItemImageCache: @unchecked Sendable {
             itemCacheObservationTask?.cancel()
             itemCacheObservationTask = Task { [weak self, weak appState] in
                 var previous: MenuBarItemManager.ItemCache?
-                let changes = Observations { appState?.itemManager.itemCache }
+                let changes = ObservationsCompat { appState?.itemManager.itemCache }
                 for await cache in changes {
                     guard let self else { return }
                     guard cache != previous else { continue }
@@ -609,7 +609,7 @@ final class MenuBarItemImageCache: @unchecked Sendable {
             // idempotent (guards internally against redundant starts), the
             // debounce is dropped in favor of firing directly on each change.
             navigationStateObservationTask = Task { @MainActor [weak self, navigationState = appState.navigationState] in
-                let changes = Observations {
+                let changes = ObservationsCompat {
                     (
                         navigationState.isIceBarPresented,
                         navigationState.isSearchPresented,
@@ -636,7 +636,7 @@ final class MenuBarItemImageCache: @unchecked Sendable {
             let advancedSettings = appState.settings.advanced
             iconRefreshIntervalObservationTask = Task { @MainActor [weak self] in
                 var previous: (interval: TimeInterval, globalAttention: Bool, prefersAppIcon: Bool)?
-                let changes = Observations {
+                let changes = ObservationsCompat {
                     (
                         interval: advancedSettings.iconRefreshInterval,
                         globalAttention: advancedSettings.surfaceItemsSeekingAttention,

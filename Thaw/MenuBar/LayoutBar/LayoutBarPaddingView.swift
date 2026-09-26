@@ -1393,7 +1393,7 @@ final class LayoutBarPaddingView: NSView {
         // an `$averageColorInfo` publisher.
         averageColorInfoObservationTask = Task { [weak self, weak appState] in
             var previous: MenuBarAverageColorInfo?
-            let changes = Observations { appState?.menuBarManager.averageColorInfo }
+            let changes = ObservationsCompat { appState?.menuBarManager.averageColorInfo }
             for await colorInfo in changes {
                 guard let self else { return }
                 guard colorInfo != previous else { continue }

@@ -252,7 +252,7 @@ struct TriggersSettingsPane: View {
         // reading it, mirroring LayoutBarItemView. The debounce coalesces the
         // bursts a cache cycle produces.
         .task {
-            let changes = Observations { itemManager.itemCache }
+            let changes = ObservationsCompat { itemManager.itemCache }
             for await _ in changes.debounce(for: .milliseconds(150)) {
                 refreshItemOptions()
             }
