@@ -16,13 +16,26 @@ import Synchronization
 /// iterating task is cancelled.
 nonisolated struct ObservationsCompat<Element: Sendable>: AsyncSequence, Sendable {
     private let emit: @MainActor () -> Element
+    private let alwaysTracks: Bool
 
     init(_ emit: @escaping @MainActor () -> Element) {
         self.emit = emit
+        alwaysTracks = false
+    }
+
+    private init(alwaysTracking emit: @escaping @MainActor () -> Element) {
+        self.emit = emit
+        alwaysTracks = true
+    }
+
+    /// Always uses the `withObservationTracking` fallback, so tests on
+    /// macOS 26+ cover the path macOS 15 takes.
+    static func tracking(_ emit: @escaping @MainActor () -> Element) -> Self {
+        Self(alwaysTracking: emit)
     }
 
     func makeAsyncIterator() -> Iterator {
-        if #available(macOS 26.0, *) {
+        if #available(macOS 26.0, *), !alwaysTracks {
             Iterator(native: Observations(emit).makeAsyncIterator())
         } else {
             Iterator(emit: emit)

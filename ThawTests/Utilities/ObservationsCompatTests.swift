@@ -19,31 +19,45 @@ struct ObservationsCompatTests {
         var value = 0
     }
 
-    @Test
-    func emitsCurrentValueFirst() async {
+    /// Both backends must satisfy the same contract: `.automatic` is
+    /// `Observations` on macOS 26+, `.tracking` is the macOS 15 fallback.
+    enum Backend: CaseIterable {
+        case automatic
+        case tracking
+
+        func observe(_ emit: @escaping @MainActor () -> Int) -> ObservationsCompat<Int> {
+            switch self {
+            case .automatic: ObservationsCompat(emit)
+            case .tracking: .tracking(emit)
+            }
+        }
+    }
+
+    @Test(arguments: Backend.allCases)
+    func emitsCurrentValueFirst(backend: Backend) async {
         let model = Model()
         model.value = 7
-        var iterator = ObservationsCompat { model.value }.makeAsyncIterator()
+        var iterator = backend.observe { model.value }.makeAsyncIterator()
         #expect(await iterator.next() == 7)
     }
 
-    @Test
-    func emitsNewValueAfterChange() async {
+    @Test(arguments: Backend.allCases)
+    func emitsNewValueAfterChange(backend: Backend) async {
         let model = Model()
-        var iterator = ObservationsCompat { model.value }.makeAsyncIterator()
+        var iterator = backend.observe { model.value }.makeAsyncIterator()
         #expect(await iterator.next() == 0)
 
         Task { model.value = 1 }
         #expect(await iterator.next() == 1)
     }
 
-    @Test
-    func finishesWhenIteratingTaskIsCancelled() async {
+    @Test(arguments: Backend.allCases)
+    func finishesWhenIteratingTaskIsCancelled(backend: Backend) async {
         let model = Model()
         let (seen, reportSeen) = AsyncStream.makeStream(of: Int.self)
         let task = Task {
             var received = [Int]()
-            for await value in ObservationsCompat({ model.value }) {
+            for await value in backend.observe({ model.value }) {
                 received.append(value)
                 reportSeen.yield(value)
             }
@@ -56,11 +70,11 @@ struct ObservationsCompatTests {
         #expect(await task.value == [0])
     }
 
-    @Test
-    func tracksPropertiesReadAfterAChange() async {
+    @Test(arguments: Backend.allCases)
+    func tracksPropertiesReadAfterAChange(backend: Backend) async {
         let model = Model()
         let other = Model()
-        var iterator = ObservationsCompat { model.value + other.value }.makeAsyncIterator()
+        var iterator = backend.observe { model.value + other.value }.makeAsyncIterator()
         #expect(await iterator.next() == 0)
         Task { model.value = 1 }
         #expect(await iterator.next() == 1)
