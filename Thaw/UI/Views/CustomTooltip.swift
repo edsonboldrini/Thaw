@@ -44,6 +44,7 @@ final class CustomTooltipPanel: NSPanel {
 
     private let glassView: GlassEffectViewCompat = {
         let view = GlassEffectViewCompat()
+        view.fallbackMaterial = .toolTip
         view.cornerRadius = 4
         view.translatesAutoresizingMaskIntoConstraints = false
         return view

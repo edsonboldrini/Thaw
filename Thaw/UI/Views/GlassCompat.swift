@@ -31,10 +31,9 @@ extension View {
             case let .clear(tint): glassEffect(.clear.tint(tint), in: shape)
             }
         } else {
-            switch style {
-            case .regular, .interactive: background(.regularMaterial, in: shape)
-            case let .clear(tint): background(tint, in: shape)
-            }
+            // No hover or press response for `.interactive` here: the
+            // controls using it already give AppKit's own press feedback.
+            background { GlassFallbackBackground(shape: shape, style: style) }
         }
     }
 
@@ -79,6 +78,22 @@ extension View {
     }
 }
 
+/// The pre-macOS 26 stand-in for glass: a material, under a tint for the
+/// clear style. One view type for every style, so only values vary.
+private struct GlassFallbackBackground<S: Shape>: View {
+    let shape: S
+    let style: GlassCompatStyle
+
+    var body: some View {
+        switch style {
+        case .regular, .interactive:
+            shape.fill(.regularMaterial)
+        case let .clear(tint):
+            shape.fill(.ultraThinMaterial).overlay(shape.fill(tint))
+        }
+    }
+}
+
 /// `GlassEffectContainer` on macOS 26+, its content alone before.
 struct GlassEffectContainerCompat<Content: View>: View {
     @ViewBuilder var content: Content
@@ -105,6 +120,12 @@ final class GlassEffectViewCompat: NSView {
 
     var cornerRadius: CGFloat = 0 {
         didSet { applyCornerRadius() }
+    }
+
+    /// The material used instead of glass before macOS 26, when the style's
+    /// default doesn't fit (a tooltip wants `.toolTip`).
+    var fallbackMaterial: NSVisualEffectView.Material? {
+        didSet { applyStyle() }
     }
 
     var contentView: NSView? {
@@ -146,10 +167,12 @@ final class GlassEffectViewCompat: NSView {
         if #available(macOS 26.0, *), let glass = effectView as? NSGlassEffectView {
             glass.style = style.nsGlassStyle
         } else if let visualEffect = effectView as? NSVisualEffectView {
-            visualEffect.material = switch style {
-            case .regular: .hudWindow
-            case .clear: .underWindowBackground
+            // Both adapt to light and dark appearance, as glass does.
+            let styleMaterial: NSVisualEffectView.Material = switch style {
+            case .regular: .popover
+            case .clear: .fullScreenUI
             }
+            visualEffect.material = fallbackMaterial ?? styleMaterial
         }
     }
 
