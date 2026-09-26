@@ -3995,7 +3995,9 @@ extension MenuBarItemManager {
                 itemOrder: effectiveSavedOrder
             ),
             source: .savedOrder,
-            automatic: true,
+            // The apply a sort requested is user-initiated: it must not wait
+            // for an idle mouse, since the user's hand is still on it.
+            automatic: !enforceConcealed,
             duringSettling: resolvedIdentitiesOnly,
             enforceConcealedSectionOrder: enforceConcealed,
             shouldBegin: {

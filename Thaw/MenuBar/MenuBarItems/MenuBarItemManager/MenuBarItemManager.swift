@@ -1527,8 +1527,9 @@ final class MenuBarItemManager {
             // reach the bar. The flag is one-shot: the cache cycle clears
             // it after the apply it triggers.
             enforceConcealedSectionOrderOnNextSavedApply = true
+            // User-initiated: a drag moments before must not swallow it.
             Task { [weak self] in
-                await self?.cacheItemsRegardless()
+                await self?.cacheItemsRegardless(bypassSavedLayoutCooldown: true)
             }
         }
         return merged
