@@ -1728,6 +1728,26 @@ final class MenuBarItemManager {
 
     /// Updates the preferred destination for newly detected menu bar items using the
     /// badge position from the layout editor.
+    /// The placement for the New Items badge dropped between `leftAnchor`
+    /// and `rightAnchor`. A badge on the section's default slot keeps the
+    /// section default, so it stays at that end when items are reordered
+    /// (by a sort, say) instead of following the item it was dropped next to.
+    static nonisolated func placementForNewItemsBadge(
+        sectionKey: String,
+        leftAnchor: String?,
+        rightAnchor: String?,
+        defaultSlotIsAtStart: Bool
+    ) -> NewItemsPlacement {
+        let isOnDefaultSlot = defaultSlotIsAtStart ? leftAnchor == nil : rightAnchor == nil
+        if !isOnDefaultSlot, let rightAnchor {
+            return NewItemsPlacement(sectionKey: sectionKey, anchorIdentifier: rightAnchor, relation: .leftOfAnchor)
+        }
+        if !isOnDefaultSlot, let leftAnchor {
+            return NewItemsPlacement(sectionKey: sectionKey, anchorIdentifier: leftAnchor, relation: .rightOfAnchor)
+        }
+        return NewItemsPlacement(sectionKey: sectionKey, anchorIdentifier: nil, relation: .sectionDefault)
+    }
+
     func updateNewItemsPlacement(
         section: MenuBarSection.Name,
         arrangedViews: [LayoutBarArrangedView]
@@ -1748,7 +1768,6 @@ final class MenuBarItemManager {
                     return nil
                 }
                 .first
-
             let leftNeighbor = arrangedViews[..<badgeIndex]
                 .reversed()
                 .compactMap { view -> MenuBarItem? in
@@ -1758,26 +1777,12 @@ final class MenuBarItemManager {
                     return nil
                 }
                 .first
-
-            if let rightNeighbor {
-                updatedPlacement = NewItemsPlacement(
-                    sectionKey: sectionKey(for: resolvedSection),
-                    anchorIdentifier: persistedNewItemsAnchorIdentifier(for: rightNeighbor),
-                    relation: .leftOfAnchor
-                )
-            } else if let leftNeighbor {
-                updatedPlacement = NewItemsPlacement(
-                    sectionKey: sectionKey(for: resolvedSection),
-                    anchorIdentifier: persistedNewItemsAnchorIdentifier(for: leftNeighbor),
-                    relation: .rightOfAnchor
-                )
-            } else {
-                updatedPlacement = NewItemsPlacement(
-                    sectionKey: sectionKey(for: resolvedSection),
-                    anchorIdentifier: nil,
-                    relation: .sectionDefault
-                )
-            }
+            updatedPlacement = Self.placementForNewItemsBadge(
+                sectionKey: sectionKey(for: resolvedSection),
+                leftAnchor: leftNeighbor.map(persistedNewItemsAnchorIdentifier(for:)),
+                rightAnchor: rightNeighbor.map(persistedNewItemsAnchorIdentifier(for:)),
+                defaultSlotIsAtStart: defaultNewItemsBadgeIndex(in: resolvedSection, itemCount: 1) == 0
+            )
         } else {
             updatedPlacement = NewItemsPlacement(
                 sectionKey: sectionKey(for: resolvedSection),
@@ -1785,7 +1790,6 @@ final class MenuBarItemManager {
                 relation: .sectionDefault
             )
         }
-
         guard newItemsPlacement != updatedPlacement else {
             return
         }
