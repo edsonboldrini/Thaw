@@ -10,7 +10,7 @@ import CoreGraphics
 import CoreVideo
 import Foundation
 import os.lock
-import ScreenCaptureKit
+@preconcurrency import ScreenCaptureKit
 
 /// A namespace for screen capture operations.
 nonisolated enum ScreenCapture {
