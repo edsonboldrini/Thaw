@@ -30,39 +30,44 @@ nonisolated struct ObservationsCompat<Element: Sendable>: AsyncSequence, Sendabl
     }
 
     nonisolated struct Iterator: AsyncIteratorProtocol {
-        /// `Observations`' iterator on macOS 26+.
-        private var native: (any AsyncIteratorProtocol<Element, Never>)?
-        /// The `withObservationTracking` fallback for earlier releases.
-        private let emit: (@MainActor () -> Element)?
-        private var pendingChange: ChangeSignal?
+        private enum Backend {
+            /// `Observations`' iterator on macOS 26+.
+            case native(any AsyncIteratorProtocol<Element, Never>)
+            /// The `withObservationTracking` fallback for earlier releases.
+            case tracking(emit: @MainActor () -> Element, pendingChange: ChangeSignal?)
+        }
+
+        private var backend: Backend
 
         @available(macOS 26.0, *)
         fileprivate init(native: Observations<Element, Never>.Iterator) {
-            self.native = native
-            self.emit = nil
+            backend = .native(native)
         }
 
         fileprivate init(emit: @escaping @MainActor () -> Element) {
-            self.native = nil
-            self.emit = emit
+            backend = .tracking(emit: emit, pendingChange: nil)
         }
 
         mutating func next() async -> Element? {
-            if var native {
-                let value = await native.next(isolation: #isolation)
-                self.native = native
+            switch backend {
+            case var .native(iterator):
+                let value = await iterator.next(isolation: #isolation)
+                backend = .native(iterator)
                 return value
+            case let .tracking(emit, pendingChange):
+                if let pendingChange {
+                    await pendingChange.wait()
+                }
+                guard !Task.isCancelled else { return nil }
+                let signal = ChangeSignal()
+                backend = .tracking(emit: emit, pendingChange: signal)
+                return await Self.track(emit, firing: signal)
             }
-            guard let emit else { return nil }
-            if let pendingChange {
-                await pendingChange.wait()
-            }
-            guard !Task.isCancelled else { return nil }
-            let signal = ChangeSignal()
-            pendingChange = signal
-            return await Self.track(emit, firing: signal)
         }
 
+        /// Reads `emit` under observation tracking. The tracked properties
+        /// are main-actor state, so a change's willSet and the read that
+        /// follows the signal can't interleave: the read sees the new value.
         @MainActor
         private static func track(_ emit: @MainActor () -> Element, firing signal: ChangeSignal) -> Element {
             withObservationTracking(emit) { signal.fire() }

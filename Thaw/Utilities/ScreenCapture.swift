@@ -10,6 +10,11 @@ import CoreGraphics
 import CoreVideo
 import Foundation
 import os.lock
+// Swift 6.2 (Xcode 26.3, the newest Xcode on macOS 15) rejects sending the
+// non-Sendable SCShareableContent out of SCShareableContent.current; newer
+// SDKs accept it. The content is only read to build a snapshot in the same
+// function, so it never crosses isolation. Drop @preconcurrency once
+// Xcode 26.3 is no longer a supported toolchain.
 @preconcurrency import ScreenCaptureKit
 
 /// A namespace for screen capture operations.

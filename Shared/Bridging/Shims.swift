@@ -209,7 +209,9 @@ nonisolated enum SkyLightAPI {
         // The public CoreGraphics function has the same signature and works
         // there; it is only loaded dynamically because it is unavailable at
         // compile time for a macOS 15 deployment target.
-        if #unavailable(macOS 26.0), let sym = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImageFromArray") {
+        // RTLD_DEFAULT is a C macro, ((void *)-2), that Swift doesn't import.
+        let rtldDefault = UnsafeMutableRawPointer(bitPattern: -2)
+        if #unavailable(macOS 26.0), let sym = dlsym(rtldDefault, "CGWindowListCreateImageFromArray") {
             return unsafeBitCast(sym, to: SLWindowListCreateImageFromArrayFn.self)
         }
         guard let handle else {
