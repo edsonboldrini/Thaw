@@ -411,6 +411,13 @@ extension MenuBarItemManager {
         var cursor: CGPoint {
             press == Self.offScreenPress ? release : press
         }
+
+        /// Whether the source's position between press and release describes
+        /// the move. With an off-screen press the source window follows the
+        /// clamped press into a display corner until the release.
+        var sourceGeometryIsMeaningfulMidMove: Bool {
+            press != Self.offScreenPress
+        }
     }
 
     /// Whether moves press off-screen (#748). Before macOS 26 the window
@@ -964,7 +971,8 @@ extension MenuBarItemManager {
         item: MenuBarItem,
         target: MenuBarItem,
         snapshot: [MenuBarItem],
-        on displayID: CGDirectDisplayID
+        on displayID: CGDirectDisplayID,
+        validatingSource: Bool = true
     ) throws -> (source: MoveEndpointDisposition, target: MoveEndpointDisposition) {
         let selectedBounds = CGDisplayBounds(displayID)
         let displays = NSScreen.screens.map {
@@ -1004,7 +1012,10 @@ extension MenuBarItemManager {
                 throw EventError.staleDestination(item)
             }
         }
-        return try (disposition(for: item), disposition(for: target))
+        // An unvalidated source is reported as parked; callers that skip it
+        // only use the target's disposition.
+        let source = try validatingSource ? disposition(for: item) : .parked
+        return try (source, disposition(for: target))
     }
 
     private func transportDecision(
@@ -1447,7 +1458,8 @@ extension MenuBarItemManager {
                     item: releaseEndpoints.source,
                     target: releaseEndpoints.target,
                     snapshot: releaseEndpoints.snapshot,
-                    on: displayID
+                    on: displayID,
+                    validatingSource: eventLocations.sourceGeometryIsMeaningfulMidMove
                 )
                 let releaseDestination = releaseEndpoints.destination(matching: destination)
                 let releasePoints = getTargetPoints(

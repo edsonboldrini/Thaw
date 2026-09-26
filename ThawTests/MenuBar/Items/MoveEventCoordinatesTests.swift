@@ -363,4 +363,24 @@ struct MoveEventCoordinatesTests {
         )
         #expect(onItem.cursor == CGPoint(x: 500, y: 15))
     }
+
+    /// With an off-screen press the source window follows the clamped press
+    /// into a display corner until the release, so its position between the
+    /// two halves says nothing about the move and must not be validated.
+    @Test("Only a press on the item keeps the source's mid-move geometry meaningful")
+    func sourceGeometryMeaningfulOnlyForOnItemPress() {
+        let destination = CGPoint(x: -4601, y: 18.5)
+        let offScreen = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: destination, end: destination),
+            faithfulDragStart: nil,
+            pressesOffScreen: true
+        )
+        #expect(!offScreen.sourceGeometryIsMeaningfulMidMove)
+
+        let atDestination = MenuBarItemManager.moveEventLocations(
+            targetPoints: (start: destination, end: destination),
+            faithfulDragStart: nil
+        )
+        #expect(atDestination.sourceGeometryIsMeaningfulMidMove)
+    }
 }
