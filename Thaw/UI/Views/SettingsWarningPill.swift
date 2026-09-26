@@ -81,7 +81,7 @@ struct SettingsWarningPill: View {
 
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.glassProminent)
+                    .glassButtonStyleCompat(prominent: true)
                     .tint(tint)
                     .controlSize(.small)
                     .fixedSize()
@@ -91,7 +91,7 @@ struct SettingsWarningPill: View {
         .padding(.vertical, 12)
         // Light tint wash over clear glass — reads like the mock's milky
         // translucent pill, not a solid fill.
-        .glassEffect(.clear.tint(tint.opacity(0.18)), in: shape)
+        .glassEffectCompat(.clear(tint: tint.opacity(0.18)), in: shape)
         .overlay {
             shape.strokeBorder(tint.opacity(0.28), lineWidth: 1)
         }

@@ -152,7 +152,7 @@ private struct SlideHUD<Content: View>: View {
         content
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
-            .glassEffect(.regular, in: Capsule())
+            .glassEffectCompat(in: Capsule())
     }
 }
 

@@ -488,15 +488,15 @@ private struct MenuBarSearchContentView: View {
 
     var body: some View {
         mainContent
-            .safeAreaBar(edge: .top, spacing: 0) {
+            .safeAreaBarCompat(edge: .top, spacing: 0) {
                 searchField
             }
-            .safeAreaBar(edge: .bottom, spacing: 0) {
+            .safeAreaBarCompat(edge: .bottom, spacing: 0) {
                 bottomBar
             }
-            .scrollEdgeEffectStyle(.automatic, for: .vertical)
+            .scrollEdgeEffectCompat(for: .vertical)
             .environment(\.menuBarSearchPanel, panel)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: ThawRadius.card, style: .continuous))
+            .glassEffectCompat(in: RoundedRectangle(cornerRadius: ThawRadius.card, style: .continuous))
             .frame(width: 600, height: 400)
             .fixedSize()
             .onAppear {
@@ -790,7 +790,7 @@ private struct EditNameButton: View {
                 }
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .glassEffectCompat(in: RoundedRectangle(cornerRadius: 5, style: .continuous))
                 .foregroundStyle(.secondary)
 
                 Text(verbatim: "+")
@@ -800,7 +800,7 @@ private struct EditNameButton: View {
                 }
                 .padding(.horizontal, 4)
                 .padding(.vertical, 2)
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                .glassEffectCompat(in: RoundedRectangle(cornerRadius: 5, style: .continuous))
                 .foregroundStyle(.secondary)
             }
         }
@@ -826,7 +826,7 @@ private struct EditConfirmButton: View {
                     .bold()
                     .padding(.horizontal, 7)
                     .padding(.vertical, 5)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .glassEffectCompat(in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             }
         }
     }
@@ -847,7 +847,7 @@ private struct EditDiscardButton: View {
                     .font(.system(size: 12))
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .glassEffectCompat(in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             }
         }
     }
@@ -889,7 +889,7 @@ private struct ShowItemButton: View {
                     .bold()
                     .padding(.horizontal, 7)
                     .padding(.vertical, 5)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                    .glassEffectCompat(in: RoundedRectangle(cornerRadius: 5, style: .continuous))
             }
         }
     }

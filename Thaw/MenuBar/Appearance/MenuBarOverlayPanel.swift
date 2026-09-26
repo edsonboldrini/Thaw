@@ -693,8 +693,8 @@ private final class MenuBarOverlayPanelContentView: NSView {
         isDraggingMenuBarItemObservationTask?.cancel()
     }
 
-    private lazy var tintGlassView: NSGlassEffectView = {
-        let view = NSGlassEffectView()
+    private lazy var tintGlassView: GlassEffectViewCompat = {
+        let view = GlassEffectViewCompat()
         view.style = .regular
         view.cornerRadius = 0
         view.translatesAutoresizingMaskIntoConstraints = false
@@ -1368,9 +1368,9 @@ private final class MenuBarOverlayPanelContentView: NSView {
         if configuration.backgroundKind == .glass {
             if isBackgroundGlassActive {
                 if let glassView = panel.contentView?.subviews
-                    .compactMap({ $0 as? NSGlassEffectView }).first
+                    .compactMap({ $0 as? GlassEffectViewCompat }).first
                 {
-                    glassView.style = configuration.backgroundGlassStyle.nsGlassStyle
+                    glassView.style = configuration.backgroundGlassStyle
                 }
                 return
             }
@@ -1380,8 +1380,8 @@ private final class MenuBarOverlayPanelContentView: NSView {
             let container = NSView()
             container.wantsLayer = true
 
-            let glassView = NSGlassEffectView()
-            glassView.style = configuration.backgroundGlassStyle.nsGlassStyle
+            let glassView = GlassEffectViewCompat()
+            glassView.style = configuration.backgroundGlassStyle
             glassView.cornerRadius = 0
             glassView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -1431,7 +1431,7 @@ private final class MenuBarOverlayPanelContentView: NSView {
             }
             tintGlassMaskLayer.path = shapeCGPath
             tintGlassContentMaskLayer.path = shapeCGPath
-            tintGlassView.style = configuration.tintGlassStyle.nsGlassStyle
+            tintGlassView.style = configuration.tintGlassStyle
 
             if configuration.borderOnMenuBar {
                 tintGlassBorderLayer.path = shapeCGPath

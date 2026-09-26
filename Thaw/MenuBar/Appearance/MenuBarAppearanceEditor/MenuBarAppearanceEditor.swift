@@ -24,10 +24,10 @@ struct MenuBarAppearanceEditor: View {
 
     var body: some View {
         bodyContent
-            .safeAreaBar(edge: .top, spacing: 0) {
+            .safeAreaBarCompat(edge: .top, spacing: 0) {
                 panelHeading
             }
-            .safeAreaBar(edge: .bottom, spacing: 0) {
+            .safeAreaBarCompat(edge: .bottom, spacing: 0) {
                 bottomBar
             }
     }
@@ -38,7 +38,7 @@ struct MenuBarAppearanceEditor: View {
             cannotEdit
         } else {
             mainForm
-                .scrollEdgeEffectStyle(.automatic, for: .vertical)
+                .scrollEdgeEffectCompat(for: .vertical)
                 .padding(.top, topPadding)
         }
     }
@@ -781,7 +781,7 @@ private struct PreviewButtonStyle: ButtonStyle {
         configuration.label
             .padding(.horizontal, 10)
             .padding(.vertical, 3)
-            .glassEffect(.regular.interactive(), in: Capsule(style: .continuous))
+            .glassEffectCompat(.interactive, in: Capsule(style: .continuous))
             .opacity(configuration.isPressed ? 0.7 : 1.0)
             .onChange(of: configuration.isPressed) { _, newValue in
                 isPressed = newValue

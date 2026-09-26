@@ -149,11 +149,11 @@ private struct MenuBarLayoutEditorContentView: View {
             itemManager: appState.itemManager,
             advancedSettings: appState.settings.advanced
         )
-        .scrollEdgeEffectStyle(.automatic, for: .vertical)
-        .safeAreaBar(edge: .top, spacing: 0) {
+        .scrollEdgeEffectCompat(for: .vertical)
+        .safeAreaBarCompat(edge: .top, spacing: 0) {
             panelHeading
         }
-        .safeAreaBar(edge: .bottom, spacing: 0) {
+        .safeAreaBarCompat(edge: .bottom, spacing: 0) {
             panelBottomBar
         }
         .environment(appState)

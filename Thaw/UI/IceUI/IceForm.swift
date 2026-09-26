@@ -28,7 +28,7 @@ struct IceForm<Content: View>: View {
         }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
-        .scrollEdgeEffectStyle(.soft, for: .top)
+        .scrollEdgeEffectCompat(soft: true, for: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onFrameChange { frame in
             formWidth = frame.width
