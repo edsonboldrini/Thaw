@@ -255,7 +255,7 @@ extension MenuBarCaptureService {
                         self.onInvalidate()
                     }
                 }
-                if CodeSigningInfo.processTeamIdentifier != nil {
+                if #available(macOS 26.0, *), CodeSigningInfo.processTeamIdentifier != nil {
                     session.setPeerRequirement(.isFromSameTeam())
                 }
                 session.setTargetQueue(queue)

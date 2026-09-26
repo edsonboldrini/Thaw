@@ -118,14 +118,15 @@ final nonisolated class Listener: @unchecked Sendable {
         diagLog.debug("Activating listener")
 
         do {
-            if CodeSigningInfo.processTeamIdentifier == nil {
-                diagLog.notice("Listener: no team identifier (ad-hoc build), activating without peer requirement")
+            // XPC peer requirements are macOS 26+ in Swift.
+            if #available(macOS 26.0, *), CodeSigningInfo.processTeamIdentifier != nil {
+                xpcListener = try XPCListener(service: name, requirement: .isFromSameTeam()) { self.acceptSession($0) }
+            } else {
+                diagLog.notice("Listener: no team identifier or macOS < 26, activating without peer requirement")
                 xpcListener = try XPCListener(service: name) { self.acceptSession($0) }
                 diagLog.warning(
-                    "Listener is active WITHOUT peer validation (ad-hoc/teamless build): any local process may connect"
+                    "Listener is active WITHOUT peer validation (ad-hoc/teamless build or macOS < 26): any local process may connect"
                 )
-            } else {
-                xpcListener = try XPCListener(service: name, requirement: .isFromSameTeam()) { self.acceptSession($0) }
             }
         } catch {
             diagLog.error("Failed to activate listener with error \(error)")

@@ -252,10 +252,10 @@ extension MenuBarItemService {
                     // without a team identifier (ad-hoc/personal builds) — every
                     // send would fail with "Peer forbidden (code signing)".
                     // Mirrors the teamless fallback in the service's Listener.
-                    if CodeSigningInfo.processTeamIdentifier != nil {
+                    if #available(macOS 26.0, *), CodeSigningInfo.processTeamIdentifier != nil {
                         newSession.setPeerRequirement(.isFromSameTeam())
                     } else {
-                        diagLog.notice("getOrCreateSession: no team identifier (ad-hoc build), skipping peer requirement")
+                        diagLog.notice("getOrCreateSession: no team identifier or macOS < 26, skipping peer requirement")
                     }
                     newSession.setTargetQueue(queue)
                     // Populated before activate(): a session cancelled right

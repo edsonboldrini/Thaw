@@ -199,6 +199,7 @@ final nonisolated class Listener: @unchecked Sendable {
         }
     }
 
+    @available(macOS 26.0, *)
     private func uncheckedActivateWithSameTeamRequirement() throws {
         xpcListener = try XPCListener(service: name, requirement: .isFromSameTeam()) { request in
             request.accept { [self] message in
@@ -214,7 +215,7 @@ final nonisolated class Listener: @unchecked Sendable {
             }
         }
         diagLog.warning(
-            "Capture listener is active WITHOUT peer validation (ad-hoc/teamless build): any local process may connect"
+            "Capture listener is active WITHOUT peer validation (ad-hoc/teamless build or macOS < 26): any local process may connect"
         )
     }
 
@@ -224,10 +225,11 @@ final nonisolated class Listener: @unchecked Sendable {
             return
         }
         do {
-            if CodeSigningInfo.processTeamIdentifier == nil {
-                try uncheckedActivateWithoutPeerRequirement()
-            } else {
+            // XPC peer requirements are macOS 26+ in Swift.
+            if #available(macOS 26.0, *), CodeSigningInfo.processTeamIdentifier != nil {
                 try uncheckedActivateWithSameTeamRequirement()
+            } else {
+                try uncheckedActivateWithoutPeerRequirement()
             }
         } catch {
             diagLog.error("Failed to activate capture listener with error \(error)")
