@@ -60,7 +60,9 @@ extension View {
     }
 
     /// `safeAreaBar(edge:spacing:content:)` on macOS 26+,
-    /// `safeAreaInset(edge:spacing:content:)` before.
+    /// `safeAreaInset(edge:spacing:content:)` over a bar material before:
+    /// unlike `safeAreaBar`, an inset draws no backdrop of its own, so
+    /// scrolled content would show through it.
     @ViewBuilder
     func safeAreaBarCompat(
         edge: VerticalEdge,
@@ -70,7 +72,9 @@ extension View {
         if #available(macOS 26.0, *) {
             safeAreaBar(edge: edge, spacing: spacing, content: content)
         } else {
-            safeAreaInset(edge: edge, spacing: spacing, content: content)
+            safeAreaInset(edge: edge, spacing: spacing) {
+                content().background(.bar)
+            }
         }
     }
 }
