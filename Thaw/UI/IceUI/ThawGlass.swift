@@ -86,7 +86,9 @@ enum ThawScrollEdgeEffect {
 
 extension View {
     /// safeAreaBar on macOS 26, safeAreaInset before, which reserves the
-    /// same space without the scroll edge effect.
+    /// same space without the scroll edge effect. An inset draws no backdrop
+    /// of its own, so the fallback puts the bar on the bar material, or
+    /// scrolled rows show through it.
     @ViewBuilder
     func thawSafeAreaBar(
         edge: VerticalEdge,
@@ -96,7 +98,9 @@ extension View {
         if #available(macOS 26.0, *) {
             safeAreaBar(edge: edge, spacing: spacing, content: content)
         } else {
-            safeAreaInset(edge: edge, spacing: spacing, content: content)
+            safeAreaInset(edge: edge, spacing: spacing) {
+                content().background(.bar)
+            }
         }
     }
 
